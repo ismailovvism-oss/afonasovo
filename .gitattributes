@@ -1,0 +1,18 @@
+# Текстовые файлы — нормализуем к LF в репозитории
+* text=auto eol=lf
+
+# Бинарные файлы — не трогать переводы строк, не diff-ить
+*.pdf   binary
+*.doc   binary
+*.dwg   binary
+*.mp4   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.npz   binary
+*.pkl   binary
+
+# CAD/3D — текстовые по формату, но храним как есть, без нормализации
+*.dxf   -text
+*.obj   -text
+*.mtl   -text

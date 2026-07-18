@@ -1,0 +1,283 @@
+<meta charset="utf-8">
+<title>3D-прогулка · Коттеджный посёлок Б. Афанасово</title>
+<style>
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#0c1013;font-family:system-ui,"Segoe UI",Roboto,sans-serif}
+  #c{display:block;width:100%;height:100%}
+  .mono{font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace}
+  #overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,rgba(18,24,26,.55),rgba(10,13,15,.9));z-index:10;cursor:pointer}
+  .panel{background:rgba(20,26,28,.92);border:1px solid #33403f;border-radius:16px;padding:30px 34px;
+    max-width:440px;text-align:center;color:#e9e4d7;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .panel .eye{font-family:ui-monospace,monospace;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:#C46A5E}
+  .panel h1{font-size:1.5rem;font-weight:650;margin:8px 0 4px}
+  .panel p{color:#9aa39e;font-size:.9rem;margin:0 0 18px}
+  .keys{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;text-align:left;font-size:.86rem;margin:0 auto 20px;max-width:300px}
+  .keys b{font-family:ui-monospace,monospace;background:#2a3436;border:1px solid #3c4a49;border-radius:6px;
+    padding:2px 9px;color:#e9e4d7;justify-self:start;white-space:nowrap}
+  .keys span{color:#c3ccc6;align-self:center}
+  .enter{display:inline-block;margin-top:4px;background:#C4392B;color:#fff;border:0;border-radius:9px;
+    padding:12px 26px;font-size:1rem;font-weight:600;cursor:pointer}
+  .enter:hover{background:#d5493a}
+  #hud{position:fixed;left:14px;bottom:14px;z-index:5;color:#e9e4d7;font-size:.72rem;
+    background:rgba(16,20,22,.6);border:1px solid #2b3535;border-radius:9px;padding:8px 11px;pointer-events:none;display:none}
+  #hud .k{color:#C4A461}
+  #mini{position:fixed;right:14px;top:14px;z-index:5;border:1px solid #34403f;border-radius:10px;
+    background:rgba(16,20,22,.72);display:none}
+  #crosshair{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;
+    background:rgba(255,255,255,.5);z-index:4;display:none;pointer-events:none}
+  #legend{position:fixed;left:14px;top:14px;z-index:5;color:#cdd4cf;font-size:.72rem;
+    background:rgba(16,20,22,.6);border:1px solid #2b3535;border-radius:9px;padding:9px 11px;display:none}
+  #legend .row{display:flex;align-items:center;gap:7px;margin:2px 0}
+  #legend .sw{width:11px;height:11px;border-radius:3px}
+  #back{position:fixed;right:14px;bottom:14px;z-index:6;color:#cdd4cf;text-decoration:none;font-size:.78rem;
+    background:rgba(16,20,22,.7);border:1px solid #2b3535;border-radius:8px;padding:7px 12px}
+  #back:hover{color:#fff;border-color:#C4392B}
+  #mini,#legend{pointer-events:none}
+</style>
+
+<canvas id="c"></canvas>
+<div id="crosshair"></div>
+<div id="legend"></div>
+<div id="hud"></div>
+<canvas id="mini" width="190" height="150"></canvas>
+<a id="back" href="https://claude.ai/code/artifact/2a6caf6f-49bc-4165-9b7f-972c92e52791" target="_blank" rel="noopener">← к альбому проекта</a>
+
+<div id="overlay">
+  <div class="panel" onclick="event.stopPropagation()">
+    <div class="eye">Пилотный проект · Б. Афанасово</div>
+    <h1>Прогулка по посёлку</h1>
+    <p>Трёхмерная модель на реальном рельефе и размерах. Пройдитесь между домами.</p>
+    <div class="keys">
+      <b>W A S D</b><span>идти вперёд / влево / назад / вправо</span>
+      <b>Мышь</b><span>зажмите и двигайте — осмотреться</span>
+      <b>Shift</b><span>бег</span>
+      <b>Пробел</b><span>вид сверху / вернуться</span>
+      <b>T</b><span>телепорт на старт</span>
+      <b>Esc</b><span>пауза / меню</span>
+    </div>
+    <button class="enter" id="enter">Войти в посёлок ▸</button>
+    <p style="margin:14px 0 0;font-size:.76rem;color:#6f7873">Нужны мышь и клавиатура (десктоп). Концепт-массинг: объёмы и рельеф реальные, детализация упрощена.</p>
+  </div>
+</div>
+
+<script>@@THREE@@</script>
+<script>@@PLC@@</script>
+<script>
+const SCENE = @@SCENE@@;
+(function(){
+"use strict";
+// ---------- decode terrain ----------
+function b64bytes(s){const bin=atob(s);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+const T=SCENE.terrain;
+const Zf=new Float32Array(b64bytes(T.z).buffer);
+const Mk=b64bytes(T.mask);
+const nx=T.nx, ny=T.ny, step=T.step;
+function gz(i,j){ if(i<0||j<0||i>=nx||j>=ny) return null; const v=Zf[j*nx+i]; return v<=-9000?null:v; }
+// bilinear terrain height at three coords (tx, tz);  world local: wx=tx, wy=-tz
+function heightAt(tx,tz){
+  const wx=tx, wy=-tz;
+  const fx=wx/step, fy=wy/step;
+  let i=Math.floor(fx), j=Math.floor(fy);
+  const dx=fx-i, dy=fy-j;
+  const a=gz(i,j), b=gz(i+1,j), c=gz(i,j+1), d=gz(i+1,j+1);
+  const vals=[a,b,c,d].filter(v=>v!==null);
+  if(!vals.length) return T.zmin-2;
+  const m=vals.reduce((p,q)=>p+q,0)/vals.length;
+  const A=a??m,B=b??m,C=c??m,D=d??m;
+  return A*(1-dx)*(1-dy)+B*dx*(1-dy)+C*(1-dx)*dy+D*dx*dy;
+}
+
+// ---------- renderer / scene ----------
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x9fc4e8);
+scene.fog=new THREE.FogExp2(0x9fc4e8,0.0016);
+const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.1,3000);
+const hemi=new THREE.HemisphereLight(0xbfd8ff,0x5a6a4a,0.9); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff2d8,1.15); sun.position.set(-0.5,1,0.4); scene.add(sun);
+
+// ---------- terrain mesh (vertex colors by elevation) ----------
+function terrainMesh(){
+  const pos=[],col=[],idx=[];
+  const zmin=T.zmin,zmax=T.zmax, rng=Math.max(1,zmax-zmin);
+  const lo=new THREE.Color(0x6f8f4a), mid=new THREE.Color(0x9fae5f), hi=new THREE.Color(0xc7b98a);
+  const vindex=new Int32Array(nx*ny).fill(-1); let vc=0;
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const z=gz(i,j); if(z===null) continue;
+    vindex[j*nx+i]=vc++;
+    pos.push(i*step, z, -(j*step));
+    const t=(z-zmin)/rng; const c=new THREE.Color();
+    if(t<0.5) c.copy(lo).lerp(mid,t*2); else c.copy(mid).lerp(hi,(t-0.5)*2);
+    col.push(c.r,c.g,c.b);
+  }
+  for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){
+    const a=vindex[j*nx+i],b=vindex[j*nx+i+1],c=vindex[(j+1)*nx+i],d=vindex[(j+1)*nx+i+1];
+    if(a<0||b<0||c<0||d<0) continue;
+    idx.push(a,c,b, b,c,d);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  g.setIndex(idx); g.computeVertexNormals();
+  return new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide}));
+}
+scene.add(terrainMesh());
+
+// ---------- buildings (merged) ----------
+function Builder(){ this.pos=[]; this.col=[]; }
+Builder.prototype.tri=function(p,q,r,c){ this.pos.push(p[0],p[1],p[2], q[0],q[1],q[2], r[0],r[1],r[2]);
+  for(let k=0;k<3;k++) this.col.push(c.r,c.g,c.b); };
+Builder.prototype.quad=function(a,b,c,d,col){ this.tri(a,b,c,col); this.tri(a,c,d,col); };
+Builder.prototype.mesh=function(){ const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(this.pos,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(this.col,3));
+  g.computeVertexNormals(); return new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide})); };
+
+const wallCol=new THREE.Color(0xe0cba6);
+const roofCols=[new THREE.Color(0x8a3b2a),new THREE.Color(0x8a3b2a),new THREE.Color(0x6a2b1a)];
+const B=new Builder();
+function P3(wx,wy,y){ return [wx, y, -wy]; }
+function building(cx,cy,ang,l1,l2,wallH,roofH,rcol){
+  const ca=Math.cos(ang),sa=Math.sin(ang);
+  const ux=ca*l1/2, uy=sa*l1/2, vx=-sa*l2/2, vy=ca*l2/2;
+  // corners world
+  const cor=[[cx+ux+vx,cy+uy+vy],[cx+ux-vx,cy+uy-vy],[cx-ux-vx,cy-uy-vy],[cx-ux+vx,cy-uy+vy]];
+  let g=1e9; for(const c of cor) g=Math.min(g,heightAt(c[0],-(-c[1]))); // ground under
+  // recompute ground properly using heightAt(tx,tz) with tx=wx, tz=-wy
+  g=1e9; for(const c of cor) g=Math.min(g, heightAt(c[0], -c[1]));
+  const base=g-0.3, top=base+wallH, apex=top+roofH;
+  const bc=cor.map(c=>P3(c[0],c[1],base));
+  const tc=cor.map(c=>P3(c[0],c[1],top));
+  for(let i=0;i<4;i++){ const n=(i+1)%4; B.quad(bc[i],bc[n],tc[n],tc[i],wallCol); }
+  const ap=[cx,apex,-cy];
+  for(let i=0;i<4;i++){ const n=(i+1)%4; B.tri(tc[i],tc[n],ap,rcol); }
+}
+for(const h of SCENE.houses){ building(h[0],h[1],h[2],h[3],h[4],SCENE.houseWall,SCENE.houseRoof,roofCols[h[5]]||roofCols[0]); }
+for(const s of SCENE.socials){ const col=new THREE.Color(SCENE.soc_colors[s[6]]||'#cccccc');
+  building(s[0],s[1],s[2],s[3],s[4],s[5],Math.max(0.6,s[5]*0.25),col); }
+scene.add(B.mesh());
+
+// ---------- roads ----------
+const R=new Builder(); const roadCol=new THREE.Color(0x8b8b86); const HW=7;
+for(const line of SCENE.roads){
+  for(let i=0;i<line.length-1;i++){
+    const [x0,y0]=line[i],[x1,y1]=line[i+1];
+    let dx=x1-x0,dy=y1-y0; const L=Math.hypot(dx,dy); if(L<0.1)continue; dx/=L;dy/=L;
+    const px=-dy*HW, py=dx*HW;
+    const c=[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]];
+    const p=c.map(q=>P3(q[0],q[1], heightAt(q[0],-q[1])+0.12));
+    R.quad(p[0],p[1],p[2],p[3],roadCol);
+  }
+}
+scene.add(R.mesh());
+
+// ---------- boundary line ----------
+const bpts=SCENE.boundary.map(q=>new THREE.Vector3(q[0], heightAt(q[0],-q[1])+0.4, -q[1]));
+scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bpts),
+  new THREE.LineBasicMaterial({color:0xd23b2e})));
+
+// ---------- first-person controls (drag-look; no Pointer Lock — works in sandbox) ----------
+camera.rotation.order='YXZ';
+scene.add(camera);
+const spawn=SCENE.spawn;
+const HC=(function(){let sx=0,sy=0;for(const h of SCENE.houses){sx+=h[0];sy+=h[1];}
+  const n=Math.max(1,SCENE.houses.length);return [sx/n,sy/n];})();
+let yaw=0,pitch=0,overhead=false,savedY=0,savedPitch=0,playing=false,dragging=false,locked=false;
+function applyRot(){ camera.rotation.set(pitch,yaw,0); }
+function goSpawn(){ const px=spawn[0], py=spawn[1];
+  camera.position.set(px, heightAt(px,-py)+1.7, -py);
+  const near=SCENE.houses.map(h=>[h,(h[0]-px)*(h[0]-px)+(h[1]-py)*(h[1]-py)]).sort((a,b)=>a[1]-b[1]).slice(0,15);
+  let ax=0,ay=0,n=Math.max(1,near.length); near.forEach(q=>{ax+=q[0][0];ay+=q[0][1];}); ax/=n; ay/=n;
+  yaw=Math.atan2(-(ax-px), -((-ay)-(-py))); pitch=-0.05; overhead=false; applyRot(); }
+goSpawn();
+function toggleOverhead(){
+  if(!overhead){ savedY=camera.position.y; savedPitch=pitch;
+    camera.position.y=heightAt(camera.position.x,camera.position.z)+150; pitch=-1.45; overhead=true; applyRot(); }
+  else { camera.position.y=savedY; pitch=savedPitch; overhead=false; applyRot(); } }
+
+const overlay=document.getElementById('overlay'), hud=document.getElementById('hud'),
+      cross=document.getElementById('crosshair'), mini=document.getElementById('mini'),
+      legend=document.getElementById('legend'), cv=renderer.domElement;
+function start(){ playing=true; overlay.style.display='none';
+  [hud,cross,mini,legend].forEach(e=>e.style.display='block');
+  cv.style.cursor='grab'; try{ cv.requestPointerLock&&cv.requestPointerLock(); }catch(e){} }
+function pause(){ playing=false; dragging=false; overlay.style.display='flex';
+  [hud,cross,mini,legend].forEach(e=>e.style.display='none');
+  try{ document.exitPointerLock&&document.exitPointerLock(); }catch(e){} }
+document.getElementById('enter').addEventListener('click',start);
+overlay.addEventListener('click',start);
+document.addEventListener('pointerlockchange',()=>{ locked=(document.pointerLockElement===cv); });
+cv.addEventListener('mousedown',e=>{ if(playing){ dragging=true; cv.style.cursor='grabbing'; } });
+window.addEventListener('mouseup',()=>{ dragging=false; if(playing) cv.style.cursor='grab'; });
+window.addEventListener('mousemove',e=>{ if(playing && (locked||dragging)){
+  const s=0.0026; yaw-=e.movementX*s; pitch=Math.max(-1.45,Math.min(1.45,pitch-e.movementY*s)); applyRot(); } });
+
+const keys={};
+addEventListener('keydown',e=>{ if(e.code==='Escape'){ pause(); return; }
+  if(!playing) return; keys[e.code]=true;
+  if(e.code==='KeyT') goSpawn();
+  if(e.code==='Space'){ e.preventDefault(); toggleOverhead(); } });
+addEventListener('keyup',e=>{ keys[e.code]=false; });
+hud.innerHTML='<span class="k">WASD</span> идти · <span class="k">мышь</span> (зажать) осмотр · <span class="k">Shift</span> бег · <span class="k">Пробел</span> сверху · <span class="k">T</span> старт · <span class="k">Esc</span> меню';
+legend.innerHTML=
+ '<div class="row"><span class="sw" style="background:#8a3b2a"></span>Жилые дома</div>'+
+ '<div class="row"><span class="sw" style="background:#c86a86"></span>Школа-детсад</div>'+
+ '<div class="row"><span class="sw" style="background:#6a9a86"></span>Мечеть</div>'+
+ '<div class="row"><span class="sw" style="background:#8b8b86"></span>Дороги</div>';
+
+// ---------- minimap ----------
+const mctx=mini.getContext('2d'); let mb=null;
+(function(){ const xs=SCENE.boundary.map(p=>p[0]),ys=SCENE.boundary.map(p=>p[1]);
+  mb={x0:Math.min(...xs),x1:Math.max(...xs),y0:Math.min(...ys),y1:Math.max(...ys)}; })();
+function mmap(x,y){ const w=mini.width,h=mini.height,pad=8;
+  const sx=(w-2*pad)/(mb.x1-mb.x0), sy=(h-2*pad)/(mb.y1-mb.y0); const s=Math.min(sx,sy);
+  return [pad+(x-mb.x0)*s, h-pad-(y-mb.y0)*s]; }
+function drawMini(){
+  mctx.clearRect(0,0,mini.width,mini.height);
+  mctx.strokeStyle='#c85a4a'; mctx.lineWidth=1.4; mctx.beginPath();
+  SCENE.boundary.forEach((p,i)=>{ const[a,b]=mmap(p[0],p[1]); i?mctx.lineTo(a,b):mctx.moveTo(a,b); }); mctx.stroke();
+  mctx.strokeStyle='rgba(180,180,175,.7)'; mctx.lineWidth=1;
+  for(const line of SCENE.roads){ mctx.beginPath(); line.forEach((p,i)=>{const[a,b]=mmap(p[0],p[1]); i?mctx.lineTo(a,b):mctx.moveTo(a,b);}); mctx.stroke(); }
+  mctx.fillStyle='rgba(200,120,110,.85)';
+  for(const h of SCENE.houses){ const[a,b]=mmap(h[0],h[1]); mctx.fillRect(a-1,b-1,2,2); }
+  const px=camera.position.x, py=-camera.position.z; const[a,b]=mmap(px,py);
+  const wx=-Math.sin(yaw), wy=Math.cos(yaw); const ang=Math.atan2(wy,wx);
+  mctx.fillStyle='#d23b2e'; mctx.beginPath();
+  mctx.moveTo(a+Math.cos(ang)*7, b-Math.sin(ang)*7);
+  mctx.lineTo(a+Math.cos(ang+2.5)*4.5, b-Math.sin(ang+2.5)*4.5);
+  mctx.lineTo(a+Math.cos(ang-2.5)*4.5, b-Math.sin(ang-2.5)*4.5);
+  mctx.closePath(); mctx.fill();
+}
+
+// ---------- loop ----------
+let prev=performance.now();
+function animate(now){
+  requestAnimationFrame(animate);
+  const dt=Math.min(0.05,(now-prev)/1000); prev=now;
+  if(playing && !overhead){
+    const sp=(keys['ShiftLeft']||keys['ShiftRight'])?30:12;
+    const fwd=(keys['KeyW']?1:0)-(keys['KeyS']?1:0);
+    const str=(keys['KeyD']?1:0)-(keys['KeyA']?1:0);
+    if(fwd||str){ const fX=-Math.sin(yaw),fZ=-Math.cos(yaw),rX=Math.cos(yaw),rZ=-Math.sin(yaw);
+      let mx=fX*fwd+rX*str, mz=fZ*fwd+rZ*str; const l=Math.hypot(mx,mz)||1;
+      camera.position.x+=mx/l*sp*dt; camera.position.z+=mz/l*sp*dt; }
+    camera.position.x=Math.max(mb.x0-20,Math.min(mb.x1+20,camera.position.x));
+    camera.position.z=Math.max(-(mb.y1+20),Math.min(-(mb.y0-20),camera.position.z));
+    camera.position.y=heightAt(camera.position.x,camera.position.z)+1.7;
+  }
+  renderer.render(scene,camera);
+  if(playing) drawMini();
+}
+requestAnimationFrame(animate);
+
+function resize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); }
+addEventListener('resize',resize); resize();
+
+// debug hook (harmless preview helper)
+window.__V={scene,camera,heightAt,goSpawn,start,
+  aerial:function(fx,fy,h,p){ camera.position.set(fx, heightAt(fx,-fy)+h, -fy); pitch=(p||-0.9); overhead=true; applyRot(); }};
+})();
+</script>

@@ -1,0 +1,550 @@
+<meta charset="utf-8">
+<title>Пилотный проект коттеджного посёлка · Б. Афанасово</title>
+<style>
+:root{
+  --paper:#F2EFE8; --paper-2:#EAE6DC; --panel:#F7F5EF;
+  --ink:#20292B; --ink-soft:#5B635F; --line:#D6CEBF;
+  --accent:#C33628; --accent-soft:#e9d3ce; --survey:#5C7A2F; --bronze:#8E7433;
+  --c1:#1f6fb2; --c2:#9c7018; --c3:#7a4fb0; --c4:#4e8a2f;
+  --shadow:0 1px 2px rgba(30,35,30,.06),0 8px 24px rgba(30,35,30,.07);
+  --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#12181A; --paper-2:#171E21; --panel:#1B2327;
+    --ink:#E9E4D7; --ink-soft:#98A19B; --line:#2A3438;
+    --accent:#E4574A; --accent-soft:#3a2422; --survey:#93B559; --bronze:#C4A461;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --paper:#F2EFE8; --paper-2:#EAE6DC; --panel:#F7F5EF;
+  --ink:#20292B; --ink-soft:#5B635F; --line:#D6CEBF;
+  --accent:#C33628; --accent-soft:#e9d3ce; --survey:#5C7A2F; --bronze:#8E7433;
+  --shadow:0 1px 2px rgba(30,35,30,.06),0 8px 24px rgba(30,35,30,.07);
+}
+:root[data-theme="dark"]{
+  --paper:#12181A; --paper-2:#171E21; --panel:#1B2327;
+  --ink:#E9E4D7; --ink-soft:#98A19B; --line:#2A3438;
+  --accent:#E4574A; --accent-soft:#3a2422; --survey:#93B559; --bronze:#C4A461;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-soft)}
+h1,h2,h3{text-wrap:balance;line-height:1.15;margin:0}
+a{color:var(--accent)}
+
+header.masthead{position:relative;border-bottom:1px solid var(--line);
+  background:var(--paper-2);overflow:hidden}
+#contour{position:absolute;inset:0;width:100%;height:100%;opacity:.5;pointer-events:none}
+.mast-in{position:relative;max-width:1240px;margin:0 auto;padding:26px 24px 22px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.mast-title{display:flex;flex-direction:column;gap:7px}
+.mast-title h1{font-size:clamp(1.35rem,2.6vw,2.05rem);font-weight:650;letter-spacing:-.01em}
+.mast-red{color:var(--accent)}
+.mast-sub{color:var(--ink-soft);font-size:.95rem}
+.stamp{font-family:var(--mono);font-size:.72rem;color:var(--ink-soft);
+  border:1px solid var(--line);border-radius:7px;background:var(--panel);
+  display:grid;grid-template-columns:auto auto;overflow:hidden}
+.stamp div{padding:6px 11px;border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.stamp div:nth-child(-n+2){border-top:none}
+.stamp div:nth-child(odd){border-left:none;color:var(--ink)}
+.stamp b{color:var(--ink);font-weight:600}
+.themebtn{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);
+  padding:7px 11px;border-radius:7px}
+.themebtn:hover{color:var(--ink);border-color:var(--ink-soft)}
+
+.wrap{max-width:1240px;margin:0 auto;padding:24px;display:grid;
+  grid-template-columns:270px 1fr;gap:26px;align-items:start}
+aside.register{position:sticky;top:16px}
+.reg-title{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px 4px}
+.reg-group{margin-bottom:16px}
+.reg-group>span{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--bronze);padding:0 4px 6px;margin-top:4px}
+.reg-item{width:100%;text-align:left;display:flex;gap:10px;align-items:baseline;
+  font:inherit;color:var(--ink);background:none;border:0;cursor:pointer;
+  padding:8px 10px;border-radius:8px;border:1px solid transparent;line-height:1.3}
+.reg-item:hover{background:var(--panel);border-color:var(--line)}
+.reg-item .num{font-family:var(--mono);font-size:.72rem;color:var(--ink-soft);min-width:26px}
+.reg-item.active{background:var(--panel);border-color:var(--line)}
+.reg-item.active .num{color:var(--accent)}
+.reg-item.active .lbl{font-weight:600}
+.reg-item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+main{min-width:0}
+.section{display:none;animation:fade .35s ease}
+.section.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.section{animation:none}}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  flex-wrap:wrap;margin-bottom:14px}
+.sec-head h2{font-size:1.4rem;font-weight:640;letter-spacing:-.01em}
+.sec-head .tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--survey);border:1px solid var(--line);
+  padding:4px 9px;border-radius:20px;white-space:nowrap}
+.sec-note{color:var(--ink-soft);max-width:64ch;margin:0 0 18px}
+.plate{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:12px;box-shadow:var(--shadow)}
+.plate img{width:100%;height:auto;display:block;border-radius:7px;cursor:zoom-in;background:#fff}
+.plate figcaption{font-family:var(--mono);font-size:.72rem;color:var(--ink-soft);
+  display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 4px 2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:4px 0 22px}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 15px}
+.stat .v{font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.stat .v em{font-style:normal;font-size:.9rem;color:var(--ink-soft)}
+.stat .k{font-size:.82rem;color:var(--ink-soft);margin-top:3px}
+.stat.accent .v{color:var(--accent)}
+
+.cover-row{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}
+@media(max-width:700px){.cover-row{grid-template-columns:1fr}}
+.cover-img{border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);
+  width:100%;display:block;cursor:zoom-in}
+
+.tepwrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-top:20px}
+table.tep{border-collapse:collapse;width:100%;min-width:520px;font-size:.92rem}
+table.tep th,table.tep td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left}
+table.tep th{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-soft);background:var(--paper-2)}
+table.tep td.n{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+table.tep tr.sub td:first-child{padding-left:30px;color:var(--ink-soft)}
+table.tep tr.total td{font-weight:600;border-top:2px solid var(--ink-soft)}
+.bar{height:6px;border-radius:4px;background:var(--accent);opacity:.75}
+
+.callout{border-left:3px solid var(--accent);background:var(--panel);border-radius:0 10px 10px 0;
+  padding:13px 16px;margin:18px 0;color:var(--ink-soft);font-size:.92rem}
+.callout b{color:var(--ink)}
+video{width:100%;border-radius:8px;display:block;background:#000}
+.walkcard{display:block;position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);
+  box-shadow:var(--shadow);text-decoration:none}
+.walkcard img{width:100%;display:block;filter:saturate(1.05)}
+.walkcta{position:absolute;left:0;right:0;bottom:0;padding:22px 20px 16px;
+  background:linear-gradient(to top,rgba(15,18,18,.86),rgba(15,18,18,0));color:#fff;
+  display:flex;flex-direction:column;gap:4px}
+.walkcta .wtag{font-size:1.15rem;font-weight:650}
+.walkcta .wsub{font-family:var(--mono);font-size:.72rem;color:#d6cfc2}
+.walkcard:hover .wtag{color:#ff8a7a}
+
+/* charts */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.charts{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h3{font-size:1rem;font-weight:620;margin-bottom:2px}
+.card .csub{font-size:.8rem;color:var(--ink-soft);margin-bottom:14px}
+.donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.donut{width:150px;height:150px;border-radius:50%;flex:0 0 auto;position:relative;
+  background:conic-gradient(
+    var(--c1) 0 67.38%, var(--panel) 67.38% 67.98%,
+    var(--c2) 67.98% 70.89%, var(--panel) 70.89% 71.49%,
+    var(--c3) 71.49% 88.10%, var(--panel) 88.10% 88.70%,
+    var(--c4) 88.70% 100%)}
+.donut::before{content:"";position:absolute;inset:26%;border-radius:50%;background:var(--panel)}
+.donut b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:1.25rem;color:var(--ink);font-weight:600}
+.donut b small{font-family:var(--sans);font-size:.6rem;font-weight:400;color:var(--ink-soft);letter-spacing:.05em}
+.legend{display:flex;flex-direction:column;gap:8px;min-width:180px;flex:1}
+.legend .li{display:flex;align-items:center;gap:9px;font-size:.85rem}
+.legend .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+.legend .li b{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+.legend .li span{color:var(--ink-soft)}
+.bars{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.brow .blab{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:5px}
+.brow .blab b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.btrack{height:16px;background:var(--paper-2);border-radius:5px;overflow:hidden}
+.bfill{height:100%;border-radius:0 5px 5px 0;min-width:6px}
+
+/* before / after */
+.ba{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--line);
+  box-shadow:var(--shadow);user-select:none;background:#fff}
+.ba img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;pointer-events:none}
+.ba .after{z-index:1}
+.ba .beforew{position:absolute;inset:0;width:50%;overflow:hidden;z-index:2;border-right:2px solid var(--accent)}
+.ba .beforew img{width:auto;height:100%;max-width:none}
+.ba-range{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;z-index:4;margin:0}
+.ba-handle{position:absolute;top:0;bottom:0;left:50%;width:34px;transform:translateX(-50%);z-index:3;
+  display:flex;align-items:center;justify-content:center;pointer-events:none}
+.ba-handle span{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.ba-tag{position:absolute;top:10px;font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;
+  padding:4px 9px;border-radius:5px;z-index:3;color:#fff}
+.ba-tag.l{left:10px;background:rgba(90,60,55,.85)}
+.ba-tag.r{right:10px;background:var(--accent)}
+.diffs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+@media(max-width:640px){.diffs{grid-template-columns:1fr}}
+.diff{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+.diff .mk{color:var(--accent);font-weight:700;flex:0 0 auto}
+.diff div{font-size:.88rem}.diff b{color:var(--ink)}.diff span{color:var(--ink-soft)}
+
+/* download */
+.dl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:640px){.dl-grid{grid-template-columns:1fr}}
+.dl{display:flex;align-items:center;gap:13px;text-decoration:none;color:inherit;
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 15px;transition:border-color .15s}
+.dl:hover{border-color:var(--accent)}
+.dl .ic{font-family:var(--mono);font-size:.66rem;font-weight:700;letter-spacing:.05em;
+  width:46px;height:46px;flex:0 0 auto;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff}
+.dl .ic.dxf{background:var(--c1)}.dl .ic.pdf{background:var(--accent)}
+.dl .nm{font-weight:600;font-size:.92rem}
+.dl .mt{font-family:var(--mono);font-size:.72rem;color:var(--ink-soft);margin-top:2px}
+.dl .arw{margin-left:auto;color:var(--ink-soft)}
+
+.lb{position:fixed;inset:0;background:rgba(10,12,12,.92);display:none;
+  align-items:center;justify-content:center;padding:24px;z-index:50;cursor:zoom-out}
+.lb.on{display:flex}
+.lb img{max-width:96vw;max-height:92vh;border-radius:6px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lb .hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;
+  font-family:var(--mono);font-size:.7rem;color:#cfc9bd;letter-spacing:.1em}
+
+footer{border-top:1px solid var(--line);margin-top:10px;background:var(--paper-2)}
+.foot-in{max-width:1240px;margin:0 auto;padding:22px 24px;color:var(--ink-soft);font-size:.85rem;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.foot-in .mono{font-family:var(--mono);font-size:.72rem}
+
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  aside.register{position:static}
+  .reg-list{display:flex;overflow-x:auto;gap:6px;padding-bottom:6px}
+  .reg-group{margin:0;display:flex;gap:6px}
+  .reg-group>span{display:none}
+  .reg-item{white-space:nowrap}
+}
+</style>
+
+<header class="masthead">
+  <canvas id="contour"></canvas>
+  <div class="mast-in">
+    <div class="mast-title">
+      <span class="eyebrow">Пилотный проект · стадия ПП</span>
+      <h1>Коттеджный посёлок <span class="mast-red">Б. Афанасово</span></h1>
+      <span class="mast-sub">Нижнекамский район, Республика Татарстан · улучшенный проект</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-end">
+      <div class="stamp">
+        <div>Площадь</div><div><b>17,69 га</b></div>
+        <div>Система коорд.</div><div><b>МСК-16</b></div>
+        <div>Жилых единиц</div><div><b>205</b></div>
+      </div>
+      <button class="themebtn" id="theme">◐ тема</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="register">
+    <p class="reg-title">Ведомость</p>
+    <nav class="reg-list" id="nav">
+      <div class="reg-group"><span>Обзор</span>
+        <button class="reg-item active" data-s="overview"><span class="num">01</span><span class="lbl">Обложка и обзор</span></button>
+        <button class="reg-item" data-s="s-compare"><span class="num">△</span><span class="lbl">Было / стало</span></button>
+      </div>
+      <div class="reg-group"><span>Чертежи</span>
+        <button class="reg-item" data-s="s-situ"><span class="num">02</span><span class="lbl">Ситуационный план</span></button>
+        <button class="reg-item" data-s="s-genplan"><span class="num">03</span><span class="lbl">Генплан (СПОЗУ)</span></button>
+        <button class="reg-item" data-s="s-seti"><span class="num">04</span><span class="lbl">Инженерные сети</span></button>
+        <button class="reg-item" data-s="s-dorogi"><span class="num">06</span><span class="lbl">Дороги. Разрезы</span></button>
+        <button class="reg-item" data-s="s-dom"><span class="num">08</span><span class="lbl">Дом. Планы этажей</span></button>
+        <button class="reg-item" data-s="s-fasady"><span class="num">09</span><span class="lbl">Дом. Фасады. Разрез</span></button>
+      </div>
+      <div class="reg-group"><span>3D</span>
+        <button class="reg-item" data-s="s-3d"><span class="num">3D</span><span class="lbl">Рельеф и посёлок</span></button>
+        <button class="reg-item" data-s="s-fly"><span class="num">▶</span><span class="lbl">Облёт (видео)</span></button>
+        <button class="reg-item" data-s="s-walk"><span class="num">🚶</span><span class="lbl">3D-прогулка</span></button>
+      </div>
+      <div class="reg-group"><span>Данные</span>
+        <button class="reg-item" data-s="s-tep"><span class="num">ТЭП</span><span class="lbl">Показатели</span></button>
+        <button class="reg-item" data-s="s-topo"><span class="num">00</span><span class="lbl">Исходная топосъёмка</span></button>
+        <button class="reg-item" data-s="s-download"><span class="num">↓</span><span class="lbl">Скачать файлы</span></button>
+      </div>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section class="section on" id="overview">
+      <div class="sec-head"><h2>Обложка и обзор</h2><span class="tag">17,69 га · 158 участков</span></div>
+      <div class="cover-row">
+        <img class="cover-img" src="@@COVER@@" alt="Титульный лист альбома">
+        <div>
+          <p class="sec-note">Улучшенный комплект пилотного проекта коттеджного посёлка, построенный
+            на реальной топографической съёмке. Слева — раздел (Ведомость): чертежи, 3D-визуализация,
+            показатели и файлы для скачивания. Кликните любое изображение, чтобы рассмотреть.</p>
+          <div class="stats">
+            <div class="stat accent"><div class="v">205</div><div class="k">жилых единиц</div></div>
+            <div class="stat"><div class="v">158</div><div class="k">участков</div></div>
+            <div class="stat"><div class="v">21<em> м</em></div><div class="k">перепад рельефа</div></div>
+            <div class="stat"><div class="v">8</div><div class="k">листов + 3D</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout"><b>Главное улучшение:</b> восполнен пропущенный двухквартирный дом 10×18,
+        застроена вся территория, добавлен отсутствовавший лист инженерных сетей, ТЭП посчитаны по
+        реальной геометрии, отдан редактируемый DXF в МСК-16. Наглядно — в разделе «Было / стало».</div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="section" id="s-compare">
+      <div class="sec-head"><h2>Было / стало</h2><span class="tag">исходник ↔ наш</span></div>
+      <p class="sec-note">Потяните разделитель. Слева — исходный генплан, справа — наш.
+        Кликните, чтобы открыть любой из них крупно.</p>
+      <div class="ba" id="ba">
+        <img class="after" src="@@GENPLAN@@" alt="Наш генплан">
+        <div class="beforew" id="baw"><img src="@@ORIG@@" alt="Исходный генплан"></div>
+        <span class="ba-tag l">БЫЛО · исходный</span>
+        <span class="ba-tag r">СТАЛО · наш</span>
+        <div class="ba-handle" id="bah"><span>⇆</span></div>
+        <input class="ba-range" id="bar" type="range" min="0" max="100" value="50" aria-label="Сравнение было/стало">
+      </div>
+      <div class="diffs">
+        <div class="diff"><span class="mk">+</span><div><b>Двухквартирный дом 10×18</b> <span>— был в задании, но пропущен. Добавлено 17 участков / 34 квартиры.</span></div></div>
+        <div class="diff"><span class="mk">+</span><div><b>Вся территория застроена</b> <span>— северная «голова» и юго-восточная доля больше не пустуют.</span></div></div>
+        <div class="diff"><span class="mk">+</span><div><b>Лист инженерных сетей</b> <span>— заявлен в ведомости, но отсутствовал. Восполнен.</span></div></div>
+        <div class="diff"><span class="mk">+</span><div><b>Редактируемый DXF</b> <span>— в исходнике был только PDF; продолжать работу было нечем.</span></div></div>
+      </div>
+    </section>
+
+    <!-- SITU -->
+    <section class="section" id="s-situ">
+      <div class="sec-head"><h2>Ситуационный план</h2><span class="tag">Лист 02</span></div>
+      <p class="sec-note">Участок в окружении: село Б. Афанасово, Покровская церковь, ручей,
+        дорога на Нижнекамск. Красная линия — проектная граница.</p>
+      <figure class="plate"><img src="@@SITU@@" alt="Ситуационный план">
+        <figcaption><span>Проектируемая территория 17,69 га</span><span>СК МСК-16</span></figcaption></figure>
+    </section>
+
+    <!-- GENPLAN -->
+    <section class="section" id="s-genplan">
+      <div class="sec-head"><h2>Генплан · Схема планировочной организации</h2><span class="tag">Лист 03</span></div>
+      <p class="sec-note">Регулярная квартальная планировка на настоящей проектной границе.
+        Все типы домов по заданию, социальная инфраструктура, дороги.</p>
+      <figure class="plate"><img src="@@GENPLAN@@" alt="Генплан, лист 3">
+        <figcaption><span>131 одноквартирный · 17 двухквартирных · 10 таунхаусов</span><span>+ школа-детсад, мечеть, магазин</span></figcaption></figure>
+    </section>
+
+    <!-- SETI -->
+    <section class="section" id="s-seti">
+      <div class="sec-head"><h2>Сводный план инженерных сетей</h2><span class="tag">Лист 04 · восполнен</span></div>
+      <p class="sec-note">Этого листа в исходном комплекте не было. Водоснабжение, водоотведение,
+        электро- и газоснабжение вдоль всех проездов; КТП, ГРПШ, скважина.</p>
+      <figure class="plate"><img src="@@SETI@@" alt="Сводный план инженерных сетей">
+        <figcaption><span>4 сети · ~2,56 км каждая</span><span>М 1:2000</span></figcaption></figure>
+    </section>
+
+    <!-- DOROGI -->
+    <section class="section" id="s-dorogi">
+      <div class="sec-head"><h2>Планы дорог · Разрезы</h2><span class="tag">Лист 06</span></div>
+      <p class="sec-note">Два типа проездов (главный 19 м, второстепенный 12 м) с раскладкой
+        заглублённых сетей и размерными цепочками.</p>
+      <figure class="plate"><img src="@@DOROGI@@" alt="Планы дорог и разрезы">
+        <figcaption><span>Разрезы 1–1, 2–2</span><span>Стадия ПП</span></figcaption></figure>
+    </section>
+
+    <!-- DOM -->
+    <section class="section" id="s-dom">
+      <div class="sec-head"><h2>Одноквартирный дом · Планы этажей</h2><span class="tag">Лист 08</span></div>
+      <p class="sec-note">Габариты 10×10 м, наружные стены газобетон 400 мм. Собственный чертёж
+        и 3D-модель — не картинка из каталога.</p>
+      <figure class="plate"><img src="@@DOMPLAN@@" alt="Планы этажей">
+        <figcaption><span>План 1-го и мансардного этажа</span><span>Формат A3</span></figcaption></figure>
+      <figure class="plate" style="margin-top:16px"><img src="@@DOM3D@@" alt="3D-вид дома">
+        <figcaption><span>3D-вид · собственная модель</span><span>OBJ для Blender / SketchUp / Компас</span></figcaption></figure>
+    </section>
+
+    <!-- FASADY -->
+    <section class="section" id="s-fasady">
+      <div class="sec-head"><h2>Дом · Фасады. Разрез</h2><span class="tag">Лист 09</span></div>
+      <p class="sec-note">Главный и боковой фасады, разрез с уровнями этажей и спецификацией
+        материалов. Этих чертежей в исходном комплекте не было.</p>
+      <figure class="plate"><img src="@@FASADY@@" alt="Фасады и разрез дома">
+        <figcaption><span>Отметки +0.000 … +9.200 · газобетон 400 мм</span><span>Формат A3</span></figcaption></figure>
+    </section>
+
+    <!-- 3D -->
+    <section class="section" id="s-3d">
+      <div class="sec-head"><h2>3D-визуализация · рельеф и застройка</h2><span class="tag">по данным съёмки</span></div>
+      <p class="sec-note">Рельеф построен по 578 отметкам высот, дома посажены на свои реальные
+        отметки. Это концепт-массинг; фотореализм наводится из тех же OBJ в Blender.</p>
+      <div class="grid2">
+        <figure class="plate"><img src="@@KVARTAL@@" alt="Квартал вблизи">
+          <figcaption><span>Квартал на склоне</span><span>перепад 21 м</span></figcaption></figure>
+        <figure class="plate"><img src="@@VILLAGE@@" alt="Общий вид рельефа">
+          <figcaption><span>Рельеф участка</span><span>TIN · 19,6 тыс. вершин</span></figcaption></figure>
+      </div>
+    </section>
+
+    <!-- FLY -->
+    <section class="section" id="s-fly">
+      <div class="sec-head"><h2>Облёт посёлка</h2><span class="tag">видео</span></div>
+      <p class="sec-note">Камера летит вдоль улиц над рельефом. Быстрый превью-рендер;
+        в Blender из той же геометрии получается HD-облёт с текстурами.</p>
+      <div class="plate"><video controls preload="metadata" playsinline><source src="@@VIDEO@@" type="video/mp4"></video></div>
+    </section>
+
+    <!-- WALK -->
+    <section class="section" id="s-walk">
+      <div class="sec-head"><h2>3D-прогулка по посёлку</h2><span class="tag">интерактив · three.js</span></div>
+      <p class="sec-note">Трёхмерная сцена на реальном рельефе и размерах домов. Открывается в новой
+        вкладке — можно ходить от первого лица (WASD + мышь) между домами. Нужны мышь и клавиатура.</p>
+      <a class="walkcard" href="https://claude.ai/code/artifact/bc2aff56-f3cc-4800-b26a-b34fca0f10a0" target="_blank" rel="noopener">
+        <img src="@@KVARTAL@@" alt="3D-посёлок">
+        <div class="walkcta"><span class="wtag">▶ Войти в 3D-прогулку</span>
+          <span class="wsub">158 домов · рельеф по 578 отметкам · открыть в новой вкладке ↗</span></div>
+      </a>
+    </section>
+
+    <!-- TEP -->
+    <section class="section" id="s-tep">
+      <div class="sec-head"><h2>Технико-экономические показатели</h2><span class="tag">баланс = 100%</span></div>
+      <p class="sec-note">Посчитаны по фактической геометрии плана, а не «на глаз».</p>
+      <div class="charts">
+        <div class="card">
+          <h3>Баланс территории</h3><div class="csub">доля площади, % · всего 176 895 м²</div>
+          <div class="donut-wrap">
+            <div class="donut"><b>17,7<small>ГА</small></b></div>
+            <div class="legend">
+              <div class="li"><span class="sw" style="background:var(--c1)"></span><span>Жилая застройка</span><b>67,4%</b></div>
+              <div class="li"><span class="sw" style="background:var(--c3)"></span><span>Улицы, проезды</span><b>17,2%</b></div>
+              <div class="li"><span class="sw" style="background:var(--c4)"></span><span>Озеленение</span><b>11,9%</b></div>
+              <div class="li"><span class="sw" style="background:var(--c2)"></span><span>Соц. инфраструктура</span><b>3,5%</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Жилые единицы по типам</h3><div class="csub">всего 205 квартир / домов</div>
+          <div class="bars">
+            <div class="brow"><div class="blab"><span>Одноквартирные (10×10)</span><b>131</b></div>
+              <div class="btrack"><div class="bfill" style="width:100%;background:var(--c1)"></div></div></div>
+            <div class="brow"><div class="blab"><span>Таунхаусы 4-кв. (10×28)</span><b>40</b></div>
+              <div class="btrack"><div class="bfill" style="width:30.5%;background:var(--c3)"></div></div></div>
+            <div class="brow"><div class="blab"><span>Двухквартирные (10×18)</span><b>34</b></div>
+              <div class="btrack"><div class="bfill" style="width:26%;background:var(--c2)"></div></div></div>
+          </div>
+          <p style="font-size:.78rem;color:var(--ink-soft);margin:14px 0 0">
+            Двухквартирный тип был пропущен в исходном проекте — здесь восполнен.</p>
+        </div>
+      </div>
+      <div class="tepwrap">
+        <table class="tep">
+          <thead><tr><th>Наименование</th><th style="text-align:right">Площадь, м²</th><th style="text-align:right">%</th><th style="width:22%">Доля</th></tr></thead>
+          <tbody>
+            <tr class="total"><td>Общая площадь территории</td><td class="n">176 895</td><td class="n">100,00</td><td><div class="bar" style="width:100%"></div></td></tr>
+            <tr><td>Участки жилой застройки</td><td class="n">119 183</td><td class="n">67,38</td><td><div class="bar" style="width:67%"></div></td></tr>
+            <tr class="sub"><td>одноквартирные (131 уч.)</td><td class="n">101 036</td><td class="n">57,12</td><td><div class="bar" style="width:57%;opacity:.5"></div></td></tr>
+            <tr class="sub"><td>двухквартирные 10×18 (17 уч.)</td><td class="n">11 551</td><td class="n">6,53</td><td><div class="bar" style="width:6.5%;opacity:.5"></div></td></tr>
+            <tr class="sub"><td>таунхаусы (10 уч.)</td><td class="n">6 596</td><td class="n">3,73</td><td><div class="bar" style="width:3.7%;opacity:.5"></div></td></tr>
+            <tr><td>Соц. инфраструктура</td><td class="n">6 214</td><td class="n">3,51</td><td><div class="bar" style="width:3.5%"></div></td></tr>
+            <tr><td>Улицы, проезды, площадки</td><td class="n">30 435</td><td class="n">17,21</td><td><div class="bar" style="width:17%"></div></td></tr>
+            <tr><td>Озеленение, тер. общего польз.</td><td class="n">21 063</td><td class="n">11,91</td><td><div class="bar" style="width:12%"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TOPO -->
+    <section class="section" id="s-topo">
+      <div class="sec-head"><h2>Исходная топосъёмка</h2><span class="tag">DWG · МСК-16</span></div>
+      <p class="sec-note">С чего всё начинается: 578 отметок высот, горизонтали рельефа, ручей,
+        кадастровые границы. Красная линия — проектная граница, с неё снят весь генплан.</p>
+      <figure class="plate"><img src="@@TOPO@@" alt="Топографическая съёмка">
+        <figcaption><span>ООО «Геоматер», 11.2025 · высоты Балтийские</span><span>прочитано напрямую из .dwg</span></figcaption></figure>
+      <div class="callout"><b>Как это сделано:</b> DWG прочитан через LibreDWG (dwg→dxf),
+        геометрия обработана скриптами (ezdxf + shapely), генплан и показатели сгенерированы
+        автоматически. На новом участке процесс повторяется одной командой.</div>
+    </section>
+
+    <!-- DOWNLOAD -->
+    <section class="section" id="s-download">
+      <div class="sec-head"><h2>Скачать файлы</h2><span class="tag">DXF · PDF</span></div>
+      <p class="sec-note">Редактируемые чертежи и листы для печати. DXF открываются в
+        nanoCAD / AutoCAD / Компас, лежат точно на топосъёмке в МСК-16.</p>
+      <div class="dl-grid">
+        <a class="dl" href="@@DL_DXF_GEN@@" download="Генплан_Афанасово_МСК16.dxf">
+          <span class="ic dxf">DXF</span><div><div class="nm">Генплан посёлка</div><div class="mt">редактируемый · МСК-16 · ~200 КБ</div></div><span class="arw">↓</span></a>
+        <a class="dl" href="@@DL_DXF_HOUSE@@" download="Дом_1кв_планы.dxf">
+          <span class="ic dxf">DXF</span><div><div class="nm">Дом · планы этажей</div><div class="mt">редактируемый · ~41 КБ</div></div><span class="arw">↓</span></a>
+        <a class="dl" href="@@DL_PDF_GEN@@" download="Лист 3 - Генплан.pdf">
+          <span class="ic pdf">PDF</span><div><div class="nm">Лист 3 · Генплан (СПОЗУ)</div><div class="mt">для печати · A3</div></div><span class="arw">↓</span></a>
+        <a class="dl" href="@@DL_PDF_SETI@@" download="Лист 4 - Инженерные сети.pdf">
+          <span class="ic pdf">PDF</span><div><div class="nm">Лист 4 · Инженерные сети</div><div class="mt">для печати · A3</div></div><span class="arw">↓</span></a>
+        <a class="dl" href="@@DL_PDF_DOR@@" download="Лист 6 - Дороги. Разрезы.pdf">
+          <span class="ic pdf">PDF</span><div><div class="nm">Лист 6 · Дороги. Разрезы</div><div class="mt">для печати · A3</div></div><span class="arw">↓</span></a>
+        <a class="dl" href="@@DL_PDF_DOM@@" download="Лист 8 - Дом. Планы этажей.pdf">
+          <span class="ic pdf">PDF</span><div><div class="nm">Лист 8 · Дом. Планы этажей</div><div class="mt">для печати · A3</div></div><span class="arw">↓</span></a>
+      </div>
+      <div class="callout">Файлы встроены в эту страницу — скачивание работает даже без интернета.
+        3D-модели (OBJ) и остальные листы — в комплекте проекта.</div>
+    </section>
+  </main>
+</div>
+
+<div class="lb" id="lb"><img id="lbimg" alt="Просмотр в полном размере"><div class="hint">клик или Esc — закрыть</div></div>
+
+<footer><div class="foot-in">
+  <span>Улучшенный пилотный проект · демонстрация 2D/3D-автоматизации</span>
+  <span class="mono">СТАДИЯ ПП · СК МСК-16 · 17,69 ГА</span>
+</div></footer>
+
+<script>
+(function(){
+  var items=[].slice.call(document.querySelectorAll('.reg-item'));
+  var secs=[].slice.call(document.querySelectorAll('.section'));
+  function show(id){
+    secs.forEach(function(s){s.classList.toggle('on',s.id===id)});
+    items.forEach(function(b){b.classList.toggle('active',b.dataset.s===id)});
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  items.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.s)})});
+
+  // lightbox
+  var lb=document.getElementById('lb'),lbimg=document.getElementById('lbimg');
+  document.querySelectorAll('.plate img, .cover-img').forEach(function(im){
+    im.addEventListener('click',function(){lbimg.src=im.src;lb.classList.add('on')});
+  });
+  function closeLb(){lb.classList.remove('on');lbimg.removeAttribute('src')}
+  lb.addEventListener('click',closeLb);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb()});
+
+  // before/after slider
+  var bar=document.getElementById('bar'),baw=document.getElementById('baw'),bah=document.getElementById('bah');
+  function setBA(v){baw.style.width=v+'%';bah.style.left=v+'%';}
+  if(bar){bar.addEventListener('input',function(){setBA(bar.value)});setBA(50);}
+
+  // theme toggle
+  var t=document.getElementById('theme');
+  t.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+    var isDark=cur? cur==='dark' : dark;
+    document.documentElement.setAttribute('data-theme',isDark?'light':'dark');
+    draw();
+  });
+
+  // contour motif
+  var cv=document.getElementById('contour'),ctx=cv.getContext('2d');
+  function draw(){
+    var w=cv.clientWidth,h=cv.clientHeight,dpr=Math.min(devicePixelRatio||1,2);
+    cv.width=w*dpr;cv.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    var col=getComputedStyle(document.documentElement).getPropertyValue('--bronze').trim();
+    ctx.strokeStyle=col;ctx.globalAlpha=.18;ctx.lineWidth=1;
+    for(var i=0;i<18;i++){
+      ctx.beginPath();
+      var base=h*0.15+i*(h*0.9/18);
+      for(var x=0;x<=w;x+=8){
+        var y=base+Math.sin(x*0.012+i*0.6)*10+Math.sin(x*0.03+i)*5;
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+  }
+  draw();window.addEventListener('resize',draw);
+})();
+</script>

@@ -1,0 +1,14 @@
+# Локальные настройки инструментов
+.claude/
+
+# Python-окружение (эфемерное, пересоздаётся через pipeline/setup.sh)
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Системное
+.DS_Store
+Thumbs.db
+desktop.ini
